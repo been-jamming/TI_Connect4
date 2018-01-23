@@ -7,12 +7,12 @@ A connect 4 engine for the TI-89 calculator
 
 **Controls**:
 * Up:
- * Shows/Hides the engine's evaluation
+  * Shows/Hides the engine's evaluation
 * Down:
- * Makes the engine's current best move
+  * Makes the engine's current best move
 * Left/Right:
- * Changes selection
+  * Changes selection
 * Enter:
- *Makes the move in the selected column
+  * Makes the move in the selected column
 * Esc:
- * Exits from the engine
+  * Exits from the engine
