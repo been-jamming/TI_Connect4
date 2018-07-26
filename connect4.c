@@ -13,7 +13,7 @@
 
 #define BLANK 0
 #define WHITE 1
-#define BLACK 2
+#define BLACK -1
 #define FULL 3
 
 #define EXACT 1
@@ -22,19 +22,11 @@
 typedef unsigned char bool;
 
 struct board{
-	unsigned char white_x[7];
-	unsigned char black_x[7];
-	unsigned char win;
+	char spaces[7][6];
+	char win;
 	unsigned char num_moves;
-	unsigned long long int hash;
-	unsigned long long int columns_num;
-	unsigned char columns[7];
+	char columns[7];
 	unsigned char moves_since_win;
-	unsigned char trap_white[7];
-	unsigned char trap_black[7];
-	unsigned char traps[7][6];
-	int column_evals[7];
-	bool was_trap;
 	int evaluation;
 };
 
@@ -118,11 +110,62 @@ unsigned char square[6] = {
 	0b00000000
 };
 
+char wins[70];
+unsigned char win_squares[7][6][13] = {{
+	{ 1, 25, 46,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 2, 25, 26, 47,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 3, 25, 26, 27, 48,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 4, 25, 26, 27, 58,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 5, 26, 27, 59,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 6, 27, 60,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}
+},{
+	{ 1,  7, 28, 49,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 2,  8, 28, 29, 46, 50,  0,  0,  0,  0,  0,  0,  0},
+	{ 3,  9, 28, 29, 30, 47, 51, 58,  0,  0,  0,  0,  0},
+	{ 4, 10, 28, 29, 30, 48, 59, 61,  0,  0,  0,  0,  0},
+	{ 5, 11, 29, 30, 60, 62,  0,  0,  0,  0,  0,  0,  0},
+	{ 6, 12, 30, 63,  0,  0,  0,  0,  0,  0,  0,  0,  0}
+},{
+	{ 1,  7, 13, 31, 52,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 2,  8, 14, 31, 32, 49, 53, 58,  0,  0,  0,  0,  0},
+	{ 3,  9, 15, 31, 32, 33, 46, 50, 54, 59, 61,  0,  0},
+	{ 4, 10, 16, 31, 32, 33, 47, 51, 60, 62, 64,  0,  0},
+	{ 5, 11, 17, 32, 33, 48, 63, 65,  0,  0,  0,  0,  0},
+	{ 6, 12, 18, 33, 66,  0,  0,  0,  0,  0,  0,  0,  0}
+},{
+	{ 1,  7, 13, 19, 34, 55, 58,  0,  0,  0,  0,  0,  0},
+	{ 2,  8, 14, 20, 34, 35, 52, 56, 59, 61,  0,  0,  0},
+	{ 3,  9, 15, 21, 34, 35, 36, 49, 53, 57, 60, 62, 64},
+	{ 4, 10, 16, 22, 34, 35, 36, 46, 50, 54, 63, 65, 67},
+	{ 5, 11, 17, 23, 35, 36, 47, 51, 66, 68,  0,  0,  0},
+	{ 6, 12, 18, 24, 36, 48, 69,  0,  0,  0,  0,  0,  0}
+},{
+	{ 7, 13, 19, 37, 61,  0,  0,  0,  0,  0,  0,  0,  0},
+	{ 8, 14, 20, 37, 38, 55, 62, 64,  0,  0,  0,  0,  0},
+	{ 9, 15, 21, 37, 38, 39, 52, 56, 63, 65, 67,  0,  0},
+	{10, 16, 22, 37, 38, 39, 49, 53, 57, 66, 68,  0,  0},
+	{11, 17, 23, 38, 39, 50, 54, 69,  0,  0,  0,  0,  0},
+	{12, 18, 24, 39, 51,  0,  0,  0,  0,  0,  0,  0,  0}
+},{
+	{13, 19, 40, 64,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{14, 20, 40, 41, 65, 67,  0,  0,  0,  0,  0,  0,  0},
+	{15, 21, 40, 41, 42, 55, 66, 68,  0,  0,  0,  0,  0},
+	{16, 22, 40, 41, 42, 52, 56, 69,  0,  0,  0,  0,  0},
+	{17, 23, 41, 42, 53, 57,  0,  0,  0,  0,  0,  0,  0},
+	{18, 24, 42, 54,  0,  0,  0,  0,  0,  0,  0,  0,  0}
+},{
+	{19, 43, 67,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{20, 43, 44, 68,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{21, 43, 44, 45, 69,  0,  0,  0,  0,  0,  0,  0,  0},
+	{22, 43, 44, 45, 55,  0,  0,  0,  0,  0,  0,  0,  0},
+	{23, 44, 45, 56,  0,  0,  0,  0,  0,  0,  0,  0,  0},
+	{24, 45, 57,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}
+}};
+
 bool kill_engine = false;
 unsigned int show_engine;
 bool engine_move;
 unsigned char order[7] = {3,2,4,1,5,0,6};
-unsigned long long int powers_of_six[7] = {1, 6, 36, 1296, 7776, 46656, 279936};
 unsigned char killer_moves[43];
 unsigned char killer_moves2[43];
 unsigned char killer_moves3[43];
@@ -136,7 +179,7 @@ volatile unsigned long int num_nodes;
 char player_select = 0;
 unsigned char computer_select = 0;
 unsigned char old_computer_select = 0;
-unsigned char current_player = WHITE;
+char current_player = WHITE;
 char top_text[255] = "Waiting for engine...";
 volatile bool quit = false;
 void *kbq;
@@ -168,356 +211,30 @@ board *create_board(){
 	return output;
 }
 
-unsigned int get_index(board *b){
-	return (b->hash + b->columns_num)%1999;
-}
-
-void update_column(board *b, unsigned char x){
+void place_piece(board *b, unsigned char x, unsigned char y, char color){
 	unsigned char i;
-	bool evens;
-	bool odds;
-	bool white_last;
-	bool black_last;
-	bool white_trap;
-	bool black_trap;
-	evens = true;
-	odds = true;
-	white_last = false;
-	black_last = false;
-	white_trap = false;
-	black_trap = false;
-	b->evaluation -= b->column_evals[x];
-	b->column_evals[x] = 0;
-	for(i = b->columns[x] + 1; i < 6; i++){
-		if(b->traps[x][i]){
-			if(!(i%2) && odds){
-				if(b->traps[x][i] == WHITE){
-					if(white_last && !black_trap){
-						b->column_evals[x] += 150;
-					} else {
-						b->column_evals[x] += 50;
-					}
-					odds = false;
-					white_last = true;
-					black_last = false;
-					white_trap = true;
-				} else if(b->traps[x][i] == BLACK){
-					if(black_last && !white_trap){
-						b->column_evals[x] -= 150;
-					} else {
-						b->column_evals[x] -= 15;
-					}
-					odds = false;
-					black_last = true;
-					white_last = false;
-					black_trap = true;
-				} else {
-					b->column_evals[x] += 35;
-					break;
-				}
-			} else if(i%2 && evens){
-				if(b->traps[x][i] == WHITE){
-					if(white_last && !black_trap){
-						b->column_evals[x] += 150;
-					} else {
-						b->column_evals[x] += 15;
-					}
-					evens = false;
-					white_last = true;
-					black_last = false;
-					white_trap = true;
-				} else if(b->traps[x][i] == BLACK){
-					if(black_last && !white_trap){
-						b->column_evals[x] -= 150;
-					} else {
-						b->column_evals[x] -= 30;
-					}
-					evens = false;
-					black_last = true;
-					white_last = false;
-					black_trap = true;
-				} else {
-					b->column_evals[x] -= 15;
-					break;
-				}
-			}
-		} else {
-			white_last = false;
-			black_last = false;
-		}
-		if(!evens && !odds){
-			break;
-		}
-	}
-	b->evaluation += b->column_evals[x];
-}
-
-void place_piece(board *b, unsigned char x, unsigned char y, unsigned char color){
-	unsigned char y_mask;
-	unsigned char x_mask;
-	y_mask = 1<<y;
-	x_mask = 1<<x;
-	if(color == WHITE){
-		b->white_x[x] |= y_mask;
-	} else {
-		b->black_x[x] |= y_mask;
-	}
-	if(b->traps[x][y] != BLANK && b->traps[x][y] != FULL){
-		b->traps[x][y] = BLANK;
-		update_column(b, x);
-	}
-}
-
-unsigned char get_color(board *b, int x, int y){
-	if(x < 0 || x > 6 || y < 0 || y > 5){
-		return BLANK;
-	}
-	if(b->white_x[x] & (1<<y)){
-		return WHITE;
-	} else if(b->black_x[x] & (1<<y)){
-		return BLACK;
-	} else {
-		return BLANK;
-	}
-}
-
-void trap(board *b, int x, int y, unsigned char color){
-	if(x < 0 || x > 6 || y < 0 || y > 5){
+	unsigned char win_id;
+	char trap_sum;
+	b->spaces[x][y] = color;
+	
+	if(b->win){
 		return;
 	}
-	if(b->traps[x][y] == BLANK){
-		b->traps[x][y] = color;
-	} else if(b->traps[x][y] != color){
-		b->traps[x][y] = FULL;
-	}
-	update_column(b, x);
-}
-
-unsigned char check_win(board *b, int x, int y, unsigned char color, unsigned char first_call){
-	unsigned char square;
-	unsigned char counter_x;
-	unsigned char counter_y;
-	unsigned char counter_a;
-	unsigned char counter_b;
-	unsigned char trap_win;
-	unsigned char trap_x1;
-	unsigned char trap_x2;
-	unsigned char trap_a1;
-	unsigned char trap_a2;
-	unsigned char trap_b1;
-	unsigned char trap_b2;
-	bool counting_x;
-	bool counting_y;
-	bool counting_a;
-	bool counting_b;
-	char i;
-	counter_x = 1;
-	counter_y = 1;
-	counter_a = 1;
-	counter_b = 1;
-	trap_x1 = 0;
-	trap_x2 = 0;
-	trap_a1 = 0;
-	trap_a2 = 0;
-	trap_b1 = 0;
-	trap_b2 = 0;
-	counting_x = true;
-	counting_y = true;
-	counting_a = true;
-	counting_b = true;
-	for(i = 1; i < 4; i++){
-		if(counting_x){
-			square = get_color(b, x + i, y);
-			if(square == color){
-				counter_x += 1;
-			} else {
-				counting_x = false;
-				if(square == BLANK && y > b->columns[x + i]){
-					trap_x1 = i;
-				}
-			}
+	
+	for(i = 0; i < 13; i++){
+		win_id = win_squares[x][y][i];
+		if(!win_id){
+			break;
 		}
-		if(counting_y){
-			square = get_color(b, x, y + i);
-			if(square == color){
-				counter_y += 1;
-			} else {
-				counting_y = false;
-			}
-		}
-		if(counting_a){
-			square = get_color(b, x + i, y - i);
-			if(square == color){
-				counter_a += 1;
-			} else {
-				counting_a = false;
-				if(square == BLANK && (y - i) > b->columns[x + i]){
-					trap_a1 = i;
-				}
-			}
-		}
-		if(counting_b){
-			square = get_color(b, x + i, y + i);
-			if(square == color){
-				counter_b += 1;
-			} else {
-				counting_b = false;
-				if(square == BLANK && (y + i) > b->columns[x + i]){
-					trap_b1 = i;
-				}
-			}
-		}
-		if(!counting_x && !counting_y && !counting_a && !counting_b){
+		wins[win_id] += color;
+		if(wins[win_id] == 4){
+			b->win = WHITE;
+			break;
+		} else if(wins[win_id] == -4){
+			b->win = BLACK;
 			break;
 		}
 	}
-	counting_x = true;
-	counting_y = true;
-	counting_a = true;
-	counting_b = true;
-	for(i = 1; i < 4; i++){
-		if(counting_x){
-			square = get_color(b, x - i, y);
-			if(square == color){
-				counter_x += 1;
-			} else {
-				counting_x = false;
-				if(square == BLANK && y > b->columns[x - i]){
-					trap_x2 = i;
-				}
-			}
-		}
-		if(counting_y){
-			square = get_color(b, x, y - i);
-			if(square == color){
-				counter_y += 1;
-			} else {
-				counting_y = false;
-			}
-		}
-		if(counting_a){
-			square = get_color(b, x - i, y + i);
-			if(square == color){
-				counter_a += 1;
-			} else {
-				counting_a = false;
-				if(square == BLANK && (y + i) > b->columns[x - i]){
-					trap_a2 = i;
-				}
-			}
-		}
-		if(counting_b){
-			square = get_color(b, x - i, y - i);
-			if(square == color){
-				counter_b += 1;
-			} else {
-				counting_b = false;
-				if(square == BLANK && (y - i) > b->columns[x - i]){
-					trap_b2 = i;
-				}
-			}
-		}
-		if(!counting_x && !counting_y && !counting_a && !counting_b){
-			break;
-		}
-	}
-	if(trap_x1){
-		if(counter_x == 1){
-			if(get_color(b, x + trap_x1 + 1, y) == color && get_color(b, x + trap_x1 + 2, y) == color){
-				trap(b, x + trap_x1, y, color);
-			}
-		} else if(counter_x == 2){
-			if(get_color(b, x + trap_x1 + 1, y) == color){
-				trap(b, x + trap_x1, y, color);
-			}
-		} else if(counter_x == 3){
-			trap(b, x + trap_x1, y, color);
-		}
-	}
-	if(trap_a1){
-		if(counter_a == 1){
-			if(get_color(b, x + trap_a1 + 1, y - trap_a1 - 1) == color && get_color(b, x + trap_a1 + 2, y - trap_a1 - 2) == color){
-				trap(b, x + trap_a1, y - trap_a1, color);
-			}
-		} else if(counter_a == 2){
-			if(get_color(b, x + trap_a1 + 1, y - trap_a1 - 1) == color){
-				trap(b, x + trap_a1, y - trap_a1, color);
-			}
-		} else if(counter_a == 3){
-			trap(b, x + trap_a1, y - trap_a1, color);
-		}
-	}
-	if(trap_b1){
-		if(counter_b == 1){
-			if(get_color(b, x + trap_b1 + 1, y + trap_b1 + 1) == color && get_color(b, x + trap_b1 + 2, y + trap_b1 + 2) == color){
-				trap(b, x + trap_b1, y + trap_b1, color);
-			}
-		} else if(counter_b == 2){
-			if(get_color(b, x + trap_b1 + 1, y + trap_b1 + 1) == color){
-				trap(b, x + trap_b1, y + trap_b1, color);
-			}
-		} else if(counter_b == 3){
-			trap(b, x + trap_b1, y + trap_b1, color);
-		}
-	}
-	if(trap_x2){
-		if(counter_x == 1){
-			if(get_color(b, x - trap_x2 - 1, y) == color && get_color(b, x - trap_x2 - 2, y) == color){
-				trap(b, x - trap_x2, y, color);
-			}
-		} else if(counter_x == 2){
-			if(get_color(b, x - trap_x2 - 1, y) == color){
-				trap(b, x - trap_x2, y, color);
-			}
-		} else if(counter_x == 3){
-			trap(b, x - trap_x2, y, color);
-		}
-	}
-	if(trap_a2){
-		if(counter_a == 1){
-			if(get_color(b, x - trap_a2 - 1, y + trap_a2 + 1) == color && get_color(b, x - trap_a2 - 2, y + trap_a2 + 2) == color){
-				trap(b, x - trap_a2, y + trap_a2, color);
-			}
-		} else if(counter_a == 2){
-			if(get_color(b, x - trap_a2 - 1, y + trap_a2 + 1) == color){
-				trap(b, x - trap_a2, y + trap_a2, color);
-			}
-		} else if(counter_a == 3){
-			trap(b, x - trap_a2, y + trap_a2, color);
-		}
-	}
-	if(trap_b2){
-		if(counter_b == 1){
-			if(get_color(b, x - trap_b2 - 1, y - trap_b2 - 1) == color && get_color(b, x - trap_b2 - 2, y - trap_b2 - 2) == color){
-				trap(b, x - trap_b2, y - trap_b2, color);
-			}
-		} else if(counter_b == 2){
-			if(get_color(b, x - trap_b2 - 1, y - trap_b2 - 1) == color){
-				trap(b, x - trap_b2, y - trap_b2, color);
-			}
-		} else if(counter_b == 3){
-			trap(b, x - trap_b2, y - trap_b2, color);
-		}
-	}
-	if(counter_x >= 4 || counter_y >= 4 || counter_a >= 4 || counter_b >= 4){
-		return color;
-	} else {
-		return BLANK;
-	}
-}
-
-void display_board(board *b){
-	char i;
-	char j;
-	for(i = 5; i >= 0; i--){
-		for(j = 0; j < 7; j++){
-			printf("%d", get_color(b, j, i));
-		}
-		printf("\n");
-	}
-	printf("\n");
-	char ch;
-	scanf("%c", &ch);
 }
 
 void make_move(board *b, unsigned char x, unsigned char color){
@@ -525,31 +242,36 @@ void make_move(board *b, unsigned char x, unsigned char color){
 	y = b->columns[x];
 	place_piece(b, x, y, color);
 	b->columns[x] += 1;
-	if(b->win == BLANK){
-		b->win = check_win(b, x, y, color, true);
-	} else {
+	if(b->win != BLANK){
 		b->moves_since_win += 1;
 	}
 }
 
 void undo(board *b, unsigned char x){
+	unsigned char i;
+	unsigned char win_id;
 	unsigned char y;
-	unsigned char y_mask;
-	unsigned char x_mask;
 	unsigned char color;
-	y = b->columns[x] - 1;
-	y_mask = 1<<y;
-	x_mask = 1<<x;
-	if(b->white_x[x] & y_mask){
-		b->white_x[x] &= ~y_mask;
-	} else {
-		b->black_x[x] &= ~y_mask;
-	}
+	unsigned char trap_sum;
 	b->columns[x] -= 1;
-	if(b->moves_since_win == 0){
-		b->win = BLANK;
-	} else {
+	y = b->columns[x];
+	color = b->spaces[x][y];
+	b->spaces[x][y] = BLANK;
+	
+	if(b->moves_since_win){
 		b->moves_since_win -= 1;
+		if(b->moves_since_win == 0){
+			b->win = BLANK;
+		}
+		return;
+	}
+	
+	for(i = 0; i < 13; i++){
+		win_id = win_squares[x][y][i];
+		if(!win_id){
+			break;
+		}
+		wins[win_id] -= color;
 	}
 }
 
@@ -600,7 +322,7 @@ DEFINE_INT_HANDLER (time_update){
 				columns[player_select] += 1;
 				depth = 0;
 				kill_engine = true;
-			} else if(current_player == BLACK && b->columns[computer_select] < 6){
+			} else if(current_player == BLACK && columns[computer_select] < 6){
 				Sprite8(player_select*14 + 33, 10, 6, black_arrow, LCD_MEM, SPRT_XOR);
 				player_select = computer_select;
 				Sprite8(player_select*14 + 33, 10, 6, white_arrow, LCD_MEM, SPRT_XOR);
@@ -642,18 +364,14 @@ DEFINE_INT_HANDLER (time_update){
 	ExecuteHandler(old_int_5);
 }
 
-int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char color, unsigned char move, bool first_call){
+int negamax(board *b, unsigned char depth, int alpha, int beta, char color, unsigned char move, bool first_call){
 	unsigned char i;
 	unsigned char j;
 	unsigned int index;
 	unsigned char x;
 	unsigned char prev_white;
 	unsigned char prev_black;
-	unsigned char traps[7][6];
-	int column_evals[7];
 	unsigned char inner_best = 3;
-	unsigned long long int hash_before;
-	unsigned long long int columns_num_before;
 	int best;
 	int v;
 	int alpha_orig;
@@ -677,8 +395,6 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 	}
 	best = -1001;
 	v = -1001;
-	memcpy(traps, b->traps, sizeof(traps));
-	memcpy(column_evals, b->column_evals, sizeof(column_evals));
 	for(i = 0; i < 10; i++){
 		if(i == 0){
 			x = killer_moves[move];
@@ -692,8 +408,6 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 		if((x != killer_moves[move] && x != killer_moves2[move] && x != killer_moves3[move]) || (x == killer_moves[move] && i == 0) || (x == killer_moves2[move] && i == 1) || (x == killer_moves3[move] && i == 2)){
 			if(b->columns[x] < 6){
 				evaluation_before = b->evaluation;
-				hash_before = b->hash;
-				columns_num_before = b->columns_num;
 				make_move(b, x, color);
 				if(b->win == color){
 					v = 1000;
@@ -708,10 +422,6 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 				}
 				undo(b, x);
 				b->evaluation = evaluation_before;
-				b->hash = hash_before;
-				b->columns_num = columns_num_before;
-				memcpy(b->traps, traps, sizeof(b->traps));
-				memcpy(b->column_evals, column_evals, sizeof(b->column_evals));
 				if(v > best){
 					best = v;
 					if(first_call){
@@ -743,12 +453,14 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 }
 
 void _main(){
+	clrscr();
+	memset(wins, 0, sizeof(char)*70);
+	wins[0] = -100;
 	memset(killer_moves, 3, sizeof(killer_moves));
 	memset(killer_moves2, 2, sizeof(killer_moves2));
 	memset(killer_moves3, 4, sizeof(killer_moves3));
 	b = create_board();
 	kill_engine = false;
-	clrscr();
 	draw_grid();
 	kbq = kbd_queue();
 	old_int_5 = GetIntVec(AUTO_INT_5);
@@ -764,7 +476,6 @@ void _main(){
 			temp_score = ((float) negamax(b, depth, -1001, 1001, current_player, 0, true))/100;
 			if(quit){
 				SetIntVec(AUTO_INT_5, old_int_5);
-				clrscr();
 				quit = false;
 				free(b);
 				return;
