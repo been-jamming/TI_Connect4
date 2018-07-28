@@ -226,13 +226,15 @@ void place_piece(board *b, unsigned char x, unsigned char y, char color){
 		if(!win_id){
 			break;
 		}
+		trap_sum = wins[win_id]*color;
+		if(trap_sum == -3){
+			b->evaluation -= color*10;
+		}
 		wins[win_id] += color;
-		if(wins[win_id] == 4){
-			b->win = WHITE;
-			break;
-		} else if(wins[win_id] == -4){
-			b->win = BLACK;
-			break;
+		if(wins[win_id]*color == 4){
+			b->win = color;
+		} else if(wins[win_id]*color == 3){
+			b->evaluation += color*10;
 		}
 	}
 }
@@ -252,7 +254,7 @@ void undo(board *b, unsigned char x){
 	unsigned char win_id;
 	unsigned char y;
 	unsigned char color;
-	unsigned char trap_sum;
+	char trap_sum;
 	b->columns[x] -= 1;
 	y = b->columns[x];
 	color = b->spaces[x][y];
@@ -262,8 +264,9 @@ void undo(board *b, unsigned char x){
 		b->moves_since_win -= 1;
 		if(b->moves_since_win == 0){
 			b->win = BLANK;
+		} else {
+			return;
 		}
-		return;
 	}
 	
 	for(i = 0; i < 13; i++){
@@ -271,7 +274,14 @@ void undo(board *b, unsigned char x){
 		if(!win_id){
 			break;
 		}
+		trap_sum = wins[win_id]*color;
+		if(trap_sum == 3){
+			b->evaluation -= color*10;
+		}
 		wins[win_id] -= color;
+		if(wins[win_id]*color == 3){
+			b->evaluation += color*10;
+		}
 	}
 }
 
@@ -283,7 +293,7 @@ DEFINE_INT_HANDLER (time_update){
 			Sprite8(computer_select*14 + 32, 10, 6, square, LCD_MEM, SPRT_XOR);
 			DrawStr(0, 0, "                           ", A_REVERSE);
 			if(show_engine){
-				sprintf(top_text, "%.2f %.2f d: %d", score, last_score, engine_depth);
+				sprintf(top_text, "%.2f %.2f d:%d", score, last_score, engine_depth);
 				DrawStr(0, 0, top_text, A_REVERSE);
 			}
 		} else if(key == KEY_LEFT){
@@ -354,7 +364,7 @@ DEFINE_INT_HANDLER (time_update){
 	}
 	if(engine_finished){
 		if(show_engine){
-			sprintf(top_text, "%.2f %.2f d: %d nps: %ld", score, last_score, engine_depth, num_nodes*50);
+			sprintf(top_text, "%.2f %.2f d:%d nps:%ld", score, last_score, engine_depth, num_nodes*50);
 			DrawStr(0, 0, "                           ", A_REVERSE);
 			DrawStr(0, 0, top_text, A_REVERSE);
 		}
