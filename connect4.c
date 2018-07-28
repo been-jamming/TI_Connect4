@@ -122,6 +122,7 @@ bool kill_engine = false;
 unsigned int show_engine;
 bool engine_move;
 unsigned char order[7] = {3,2,4,1,5,0,6};
+unsigned int powers_of_three[7] = {1, 3, 9, 27, 81, 243, 729};
 unsigned long long int powers_of_six[7] = {1, 6, 36, 1296, 7776, 46656, 279936};
 unsigned char killer_moves[43];
 unsigned char killer_moves2[43];
@@ -642,7 +643,7 @@ DEFINE_INT_HANDLER (time_update){
 	ExecuteHandler(old_int_5);
 }
 
-int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char color, unsigned char move, bool first_call){
+int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char color, unsigned char move, bool first_call, char min_white, char min_black, unsigned char row){
 	unsigned char i;
 	unsigned char j;
 	unsigned int index;
@@ -654,10 +655,12 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 	unsigned char inner_best = 3;
 	unsigned long long int hash_before;
 	unsigned long long int columns_num_before;
+	char min_color;
 	int best;
 	int v;
 	int alpha_orig;
 	int evaluation_before;
+	
 	alpha_orig = alpha;
 	num_nodes += 1;
 	if(kill_engine){
@@ -677,6 +680,13 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 	}
 	best = -1001;
 	v = -1001;
+	
+	if(color == WHITE){
+		min_color = min_white;
+	} else {
+		min_color = min_black;
+	}
+	
 	memcpy(traps, b->traps, sizeof(traps));
 	memcpy(column_evals, b->column_evals, sizeof(column_evals));
 	for(i = 0; i < 10; i++){
@@ -690,7 +700,7 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 			x = order[i - 3];
 		}
 		if((x != killer_moves[move] && x != killer_moves2[move] && x != killer_moves3[move]) || (x == killer_moves[move] && i == 0) || (x == killer_moves2[move] && i == 1) || (x == killer_moves3[move] && i == 2)){
-			if(b->columns[x] < 6){
+			if(b->columns[x] < 6 && (x >= min_color || row & 0b10000000>>x)){
 				evaluation_before = b->evaluation;
 				hash_before = b->hash;
 				columns_num_before = b->columns_num;
@@ -700,10 +710,18 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 				} else if(b->win != color && b->win != BLANK){
 					v = -1000;
 				} else {
-					if(color == WHITE){
-						v = -negamax(b, depth - 1, -beta, -alpha, BLACK, move + 1, false);
+					if(row & 0b10000000>>x){
+						if(color == WHITE){
+							v = -negamax(b, depth - 1, -beta, -alpha, BLACK, move + 1, false, -1, -1, 0);
+						} else {
+							v = -negamax(b, depth - 1, -beta, -alpha, WHITE, move + 1, false, -1, -1, 0);
+						}
 					} else {
-						v = -negamax(b, depth - 1, -beta, -alpha, WHITE, move + 1, false);
+						if(color == WHITE){
+							v = -negamax(b, depth - 1, -beta, -alpha, BLACK, move + 1, false, x, min_black, row | 0b10000000>>x);
+						} else {
+							v = -negamax(b, depth - 1, -beta, -alpha, WHITE, move + 1, false, min_white, x, row | 0b10000000>>x);
+						}
 					}
 				}
 				undo(b, x);
@@ -761,7 +779,7 @@ void _main(){
 	while(1){
 		num_nodes = 0;
 		if(depth <= 42){
-			temp_score = ((float) negamax(b, depth, -1001, 1001, current_player, 0, true))/100;
+			temp_score = ((float) negamax(b, depth, -1001, 1001, current_player, 0, true, -1, -1, 0))/100;
 			if(quit){
 				SetIntVec(AUTO_INT_5, old_int_5);
 				clrscr();
