@@ -123,6 +123,7 @@ unsigned int show_engine;
 bool engine_move;
 unsigned char order[7] = {3,2,4,1,5,0,6};
 unsigned long long int powers_of_six[7] = {1, 6, 36, 1296, 7776, 46656, 279936};
+int prune_list[43] = {15, 15, 30, 30, 30, 30, 30, 30, 30, 30, 30, 35, 35, 35, 35, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 100, 100, 100, 100, 200, 200, 200, 200, 1000, 1000, 1000, 1000};
 unsigned char killer_moves[43];
 unsigned char killer_moves2[43];
 unsigned char killer_moves3[43];
@@ -701,9 +702,17 @@ int negamax(board *b, unsigned char depth, int alpha, int beta, unsigned char co
 					v = -1000;
 				} else {
 					if(color == WHITE){
-						v = -negamax(b, depth - 1, -beta, -alpha, BLACK, move + 1, false);
+						if(alpha - b->evaluation < prune_list[depth]){
+							v = -negamax(b, depth - 1, -beta, -alpha, BLACK, move + 1, false);
+						} else {
+							v = b->evaluation;
+						}
 					} else {
-						v = -negamax(b, depth - 1, -beta, -alpha, WHITE, move + 1, false);
+						if(alpha + b->evaluation < prune_list[depth]){
+							v = -negamax(b, depth - 1, -beta, -alpha, WHITE, move + 1, false);
+						} else {
+							v = -b->evaluation;
+						}
 					}
 				}
 				undo(b, x);
